@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RTMP To WebRTC</title>
+
+    <style>
+        textarea {
+            width: 500px;
+            min-height: 75px;
+        }
+    </style>
+
+
+    <script>
+
+        var log = msg => {
+            document.getElementById('div').innerHTML += msg + '<br>'
+        }
+
+        let pc = new RTCPeerConnection({
+            iceServers: [
+                {
+                    urls: 'stun:stun.l.google.com:19302'
+                }
+            ]
+        })
+        pc.oniceconnectionstatechange = e => log(pc.iceConnectionState)
+        let shouJi = false
+        pc.onicecandidate = event => {
+            if (event.candidate === null ) {
+                log("收集candidate完成")
+                shouJi = true
+            }
+        }
+
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+            .then(stream => {
+                stream.getTracks().forEach(track => pc.addTrack(track, stream));
+                document.getElementById('video1').srcObject = stream
+                pc.createOffer()
+                    .then(d => pc.setLocalDescription(d))
+                    .catch(log)
+            }).catch(log)
+
+
+
+
+        window.startSession = () => {
+            let roomID = document.getElementById('roomID').value
+            if (roomID === '') {
+                return alert('rtmp url must not be empty')
+            }
+            if (!shouJi) {
+                return alert('local session description must not be empty')
+            }
+
+            let xhr = new XMLHttpRequest();
+            xhr.open("POST", '/publish', true);
+            xhr.setRequestHeader("Content-type", "application/json");
+            xhr.onload = function () {
+                let resp = JSON.parse(xhr.response)
+                console.log(resp)
+                if (resp.code !== 0) {
+                    alert(resp.message)
+                } else {
+                    try {
+                        pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(atob(resp.sdp))))
+                    } catch (e) {
+                        alert(e)
+                    }
+                }
+            };
+            let requestData = {
+                "roomID": roomID,
+                "sdp": btoa(JSON.stringify(pc.localDescription))
+            }
+            console.log(requestData)
+            xhr.send(JSON.stringify(requestData));
+        }
+    </script>
+
+</head>
+
+<body>
+输入房间号:<br />
+<textarea id="roomID"> 10086 </textarea> <br />
+<video id="video1" width="160" height="120" autoplay muted></video> <br />
+
+<button onclick="window.startSession()"> 开始直播 </button><br />
+
+<br />
+
+Video<br />
+<div id="remoteVideos"></div> <br />
+
+Logs<br />
+<div id="div"></div>
+
+</body>
+</html>
