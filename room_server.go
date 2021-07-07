@@ -37,6 +37,7 @@ func NewRoomServer(sfu *SFUServer) (*RoomServer, error){
 func (r *RoomServer) Start() error{
 
 	var err error
+	//r.ginEngine.Use(TlsHandler())
 	r.ginEngine.LoadHTMLFiles("publisher.html", "player.html")
 	r.ginEngine.GET("/publisher", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "publisher.html", nil)
@@ -92,8 +93,26 @@ func (r *RoomServer) Start() error{
 	})
 
 
-	if err = r.ginEngine.Run(":8080"); err != nil {
+	if err = r.ginEngine.RunTLS(":8080", "server.crt", "server.key"); err != nil {
 		return err
 	}
 	return nil
 }
+
+
+//func TlsHandler() gin.HandlerFunc {
+//	return func(c *gin.Context) {
+//		secureMiddleware := secure.New(secure.Options{
+//			SSLRedirect: true,
+//			SSLHost:     "localhost:8080",
+//		})
+//		err := secureMiddleware.Process(c.Writer, c.Request)
+//
+//		// If there was an error, do not continue.
+//		if err != nil {
+//			return
+//		}
+//
+//		c.Next()
+//	}
+//}

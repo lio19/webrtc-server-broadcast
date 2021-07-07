@@ -9,4 +9,5 @@ require (
 	github.com/pion/rtcp v1.2.6
 	github.com/pion/webrtc/v3 v3.0.29
 	github.com/stretchr/testify v1.7.0
+	github.com/unrolled/secure v1.0.9
 )
