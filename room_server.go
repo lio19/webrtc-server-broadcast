@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/unrolled/secure"
 	"log"
 	"net/http"
 	"time"
@@ -37,7 +38,6 @@ func NewRoomServer(sfu *SFUServer) (*RoomServer, error) {
 func (r *RoomServer) Start() error {
 
 	var err error
-	//r.ginEngine.Use(TlsHandler())
 	r.ginEngine.LoadHTMLFiles("publisher.html", "player.html")
 	r.ginEngine.GET("/publisher", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "publisher.html", nil)
@@ -45,6 +45,7 @@ func (r *RoomServer) Start() error {
 	r.ginEngine.GET("/player", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "player.html", nil)
 	})
+	r.ginEngine.Use(TlsHandler())
 	r.ginEngine.Use(middleware())
 
 	r.ginEngine.POST("/publish", func(context *gin.Context) {
@@ -99,22 +100,22 @@ func (r *RoomServer) Start() error {
 	return nil
 }
 
-//func TlsHandler() gin.HandlerFunc {
-//	return func(c *gin.Context) {
-//		secureMiddleware := secure.New(secure.Options{
-//			SSLRedirect: true,
-//			SSLHost:     "localhost:8080",
-//		})
-//		err := secureMiddleware.Process(c.Writer, c.Request)
-//
-//		// If there was an error, do not continue.
-//		if err != nil {
-//			return
-//		}
-//
-//		c.Next()
-//	}
-//}
+func TlsHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		secureMiddleware := secure.New(secure.Options{
+			SSLRedirect: true,
+			SSLHost:     "localhost:8080",
+		})
+		err := secureMiddleware.Process(c.Writer, c.Request)
+
+		// If there was an error, do not continue.
+		if err != nil {
+			return
+		}
+
+		c.Next()
+	}
+}
 
 func middleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
