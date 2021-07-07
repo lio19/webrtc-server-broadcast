@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/unrolled/secure"
 	"log"
 	"net/http"
 	"time"
@@ -45,7 +44,6 @@ func (r *RoomServer) Start() error {
 	r.ginEngine.GET("/player", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "player.html", nil)
 	})
-	r.ginEngine.Use(TlsHandler())
 	r.ginEngine.Use(middleware())
 
 	r.ginEngine.POST("/publish", func(context *gin.Context) {
@@ -94,37 +92,16 @@ func (r *RoomServer) Start() error {
 		}
 	})
 
-	if err = r.ginEngine.Run(":8080"); err != nil {
+	if err = r.ginEngine.RunTLS(":8080", "server.crt", "server.key"); err != nil {
 		return err
 	}
 	return nil
 }
 
-func TlsHandler() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		secureMiddleware := secure.New(secure.Options{
-			SSLRedirect: true,
-			SSLHost:     "localhost:8080",
-		})
-		err := secureMiddleware.Process(c.Writer, c.Request)
-
-		// If there was an error, do not continue.
-		if err != nil {
-			return
-		}
-
-		c.Next()
-	}
-}
-
 func middleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		t := time.Now()
-		c.Set("example", "123456")
-		// c.Next()后就执行真实的路由函数，路由执行完成之后接着走time.Since(t)
-
 		c.Next()
-
 		// 从time.Now()到目前为止过了多长时间
 		latency := time.Since(t)
 		log.Print("--", latency)
